@@ -126,7 +126,15 @@ npm install
 npm run dev
 ```
 
-The dashboard runs on port 5000. Start the autonomous loop from the dashboard or use the API endpoints directly.
+Open `http://localhost:5000` in your browser to access the dashboard. From there you can:
+
+1. View live market data, signals, and risk checks
+2. Click **Start** to run the autonomous trading loop
+3. Use the **Buy** / **Sell** buttons for manual trades
+4. Toggle **Paper Mode** on or off
+5. View trade receipts with links to Solana Explorer
+
+You can also interact programmatically via the API — see the endpoints listed above.
 
 ## Built For
 
