@@ -75,12 +75,34 @@ POST /api/ui/paper-mode   # Toggle paper mode
 GET  /api/ui/receipts     # All trade receipts
 ```
 
-## Environment Variables
+## Setup
+
+### Required API Keys
+
+You will need accounts and API keys from the following services:
+
+| Key | Where to Get It | What It's For |
+|-----|-----------------|---------------|
+| `OPENAI_API_KEY` | [platform.openai.com](https://platform.openai.com) | LLM reasoning for trade decisions (gpt-4o-mini) |
+| `JUPITER_API_KEY` | [portal.jup.ag](https://portal.jup.ag) | Real-time SOL price quotes from Jupiter Quote API v1 |
+| `SOLANA_KEYPAIR_JSON` | Optional — auto-generated if not set | Solana wallet for on-chain memo transactions (devnet) |
+
+Set these as environment variables before running:
+
+```bash
+export OPENAI_API_KEY="your-openai-key"
+export JUPITER_API_KEY="your-jupiter-key"
+```
+
+If running on Replit, add these in the Secrets tab instead.
+
+### Trading Configuration
+
+These are optional and have sensible defaults:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `SOLANA_RPC_URL` | Solana RPC endpoint | Devnet |
-| `SOLANA_KEYPAIR_JSON` | Wallet keypair (auto-generated if not set) | Ephemeral |
 | `DEFAULT_PAIR` | Trading pair | SOL-USDC |
 | `MAX_NOTIONAL` | Max trade size in USDC | 20 |
 | `MAX_SLIPPAGE_BPS` | Max slippage in basis points | 100 |
