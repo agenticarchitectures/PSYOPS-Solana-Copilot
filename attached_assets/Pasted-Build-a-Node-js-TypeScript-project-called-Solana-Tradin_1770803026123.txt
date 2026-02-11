@@ -1,0 +1,342 @@
+Build a Node.js + TypeScript project called “Solana Trading Copilot Agent” using Solana Agent Kit + an LLM reasoning layer. The system must provide BOTH (1) a human dashboard and (2) a reusable Agent Skill API. All trades are PAPER MODE but all receipts must be written ON-CHAIN on Solana DEVNET via Memo transactions. Use this exact architecture:
+
+0. TECH + LIBS
+
+Use these libraries exactly:
+
+Node.js + TypeScript
+
+Express
+
+solana-agent-kit
+
+@solana/web3.js (only for memo tx if Agent Kit doesn’t support memo)
+
+dotenv
+
+zod
+
+node:crypto
+
+OpenAI or Replit LLM SDK
+
+local receipts.json for storage
+
+1. FOLDER STRUCTURE
+
+Create this structure:
+
+/src
+  /engine
+    market.ts
+    signal.ts
+    risk.ts
+    explain.ts
+    tradingEngine.ts
+    state.ts
+  /agent
+    llmPlanner.ts
+    loop.ts
+  /skills
+    tradingSkill.ts
+  /api
+    server.ts
+    uiRoutes.ts
+    skillRoutes.ts
+/public
+  index.html
+  app.js
+  style.css
+index.ts
+README.md
+.env.example
+receipts.json
+
+2. ENV VARS
+
+Create .env.example with:
+
+SOLANA_RPC_URL=
+SOLANA_KEYPAIR_JSON=
+OPENAI_API_KEY=      # or REPLIT_LLM_KEY
+MODE=paper
+DEFAULT_PAIR=SOL-USDC
+MAX_NOTIONAL=20
+MAX_SLIPPAGE_BPS=50
+COOLDOWN_SEC=60
+MAX_DAILY_LOSS=10
+BREAKOUT_THRESHOLD_BPS=30
+
+3. SOLANA + AGENT KIT
+
+In /src/engine/state.ts:
+
+Load keypair from SOLANA_KEYPAIR_JSON
+
+Create AgentKit client
+
+Export:
+
+getPubkey()
+
+sendMemo(text: string)
+
+shared state: rollingPrices[], running flag, paperPosition, paperUSDC, paperPnL, trade history
+
+If Agent Kit cannot send memo directly, use web3.js to send a memo instruction signed by the Agent Kit keypair.
+
+4. MARKET DATA
+
+/src/engine/market.ts:
+
+Implement getImpliedPrice(pair, notional) by calling Jupiter Quote API (HTTP)
+
+Compute implied price = outAmount / inAmount
+
+Return { impliedPrice, slippageBps, impact, routeSummary }
+
+Paper-only execution means we use Jupiter only as a data source.
+
+5. SIGNAL, RISK, EXPLAIN
+
+signal.ts:
+
+Maintain rolling window of implied prices
+
+Breakout logic
+
+Return signal + numeric strength
+
+risk.ts:
+
+maxNotional
+
+maxDailyLoss
+
+cooldown
+
+slippage threshold
+
+Return allowed + checks
+
+explain.ts:
+
+Convert signal + risk + market info into human-readable bullet explanations
+
+6. LLM AGENTIC DECISION LAYER
+
+Create /src/agent/llmPlanner.ts with:
+
+A. Context Object Format (pass to LLM)
+
+Use this exact schema:
+
+{
+  "pair": "SOL-USDC",
+  "impliedPrice": 101.25,
+  "rollingHigh": 102.1,
+  "rollingLow": 99.2,
+  "breakoutSignal": "BUY | SELL | HOLD",
+  "breakoutStrength": 0.54,
+  "slippageBps": 35,
+  "risk": {
+    "allowed": true,
+    "checks": {
+      "cooldownOK": true,
+      "maxNotionalOK": true,
+      "maxDailyLossOK": true,
+      "slippageOK": true
+    }
+  },
+  "lastActions": [
+    { "ts": "...", "side": "BUY", "price": 101.0 },
+    { "ts": "...", "side": "SELL", "price": 102.0 }
+  ]
+}
+
+B. LLM Prompt Template
+
+Use this exact text:
+
+You are a Solana Autonomous Trading Agent.
+
+You receive live market context, breakout signals, and risk constraints.
+You must decide: BUY, SELL, or HOLD.
+
+Rules:
+- NEVER BUY if slippage is above threshold.
+- NEVER EXECUTE trades if risk.allowed = false.
+- HOLD if context is unclear.
+- Provide 2–4 short bullet points explaining your reasoning.
+- Provide a confidence score between 0 and 1.
+- Respond ONLY in this JSON format:
+{
+  "action": "...",
+  "confidence": 0.0,
+  "reasons": ["...", "..."]
+}
+
+C. LLM Function Signature
+
+Implement:
+
+export async function decideAction(context: LLMContext): Promise<LLMDecision>
+
+
+Where LLMDecision:
+
+{
+  action: "BUY" | "SELL" | "HOLD",
+  confidence: number,
+  reasons: string[]
+}
+
+7. TRADING ENGINE (PAPER)
+
+/src/engine/tradingEngine.ts:
+
+Implement:
+
+getMarket(pair)
+
+getSignal(pair)
+
+proposeTrade(pair, side, notional)
+
+executeTrade(pair, side, notional, tag) in PAPER MODE ONLY:
+
+simulate fill at impliedPrice
+
+update paper balances & PnL
+
+always write a receipt
+
+write memoTx on devnet
+
+Receipt schema:
+
+{
+  "id": "uuid",
+  "ts": 123456,
+  "pair": "SOL-USDC",
+  "side": "BUY",
+  "mode": "paper",
+  "notional": 10,
+  "fillPrice": 101.23,
+  "confidence": 0.71,
+  "reasons": ["...", "..."],
+  "riskChecks": {...},
+  "memoTxid": "xxx",
+  "status": "SUCCESS"
+}
+
+
+Memo format:
+
+AA|SOL-USDC|BUY|N=10|conf=0.71|id=abcd1234
+
+
+Store receipts in receipts.json.
+
+8. AUTONOMOUS LOOP
+
+In /src/agent/loop.ts:
+
+Every 60s:
+
+Get market
+
+Compute signal
+
+Build context
+
+Call LLM → get action
+
+If BUY/SELL + risk allowed → call executeTrade
+
+Update state
+
+Allow UI to start/stop loop.
+
+9. AGENT SKILL API (key requirement)
+
+In /src/skills/tradingSkill.ts:
+
+A. manifest()
+
+Return EXACTLY this:
+
+{
+  "name": "solana-trading-skill",
+  "version": "0.1.0",
+  "description": "LLM-driven trading intelligence + on-chain receipts (paper mode)",
+  "actions": {
+    "get_market": { "pair": "string" },
+    "get_signal": { "pair": "string" },
+    "propose_trade": { "pair": "string", "side": "string", "notional": "number" },
+    "execute_trade": { "pair": "string", "side": "string", "notional": "number" },
+    "get_receipt": { "id": "string" }
+  }
+}
+
+B. invoke(action, args)
+
+Route to the trading engine functions.
+
+Skill API endpoints:
+
+GET /skill/manifest
+
+POST /skill/invoke
+
+10. UI API
+
+/src/api/uiRoutes.ts:
+
+/ui/state
+
+/ui/start
+
+/ui/stop
+
+/ui/config
+
+/ui/execute-now
+
+/ui/receipts
+
+/src/api/server.ts mounts /ui and /skill, serves /public.
+
+11. DASHBOARD UI
+
+Serve static from /public:
+
+index.html
+
+app.js calls /ui/state every 2s
+
+show last signal, confidence, reasons
+
+show paper PnL + balances
+
+show memoTxid explorer links
+
+Start / Stop buttons
+
+Manual BUY / SELL buttons
+
+12. README + scripts
+
+README must include:
+
+devnet only
+
+paper-only trades
+
+real memo receipts on chain
+
+examples for /skill/manifest + /skill/invoke
+
+package.json:
+
+"dev": "ts-node-dev index.ts"
