@@ -90,8 +90,10 @@ You will need accounts and API keys from the following services:
 Set these as environment variables before running:
 
 ```bash
-export OPENAI_API_KEY="your-openai-key"
-export JUPITER_API_KEY="your-jupiter-key"
+
+
+export OPENAI_API_KEY="your-openai-key from https://platform.openai.com"
+export JUPITER_API_KEY="your-jupiter-key from https://portal.jup.ag"
 ```
 
 If running on Replit, add these in the Secrets tab instead.
