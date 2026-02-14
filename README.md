@@ -77,9 +77,20 @@ GET  /api/ui/receipts     # All trade receipts
 
 ## Setup
 
-### Required API Keys
+### Testing Without API Costs 🎯
 
-You will need accounts and API keys from the following services:
+**Want to test without spending money?** The project includes mock implementations for OpenAI and Jupiter APIs!
+
+```bash
+# The .env file is already configured for mock mode
+USE_MOCKS=true
+```
+
+See **[TESTING.md](TESTING.md)** for a complete guide to testing without API costs.
+
+### Required API Keys (for Production)
+
+For production use with real APIs, you will need:
 
 | Key | Where to Get It | What It's For |
 |-----|-----------------|---------------|
@@ -87,11 +98,9 @@ You will need accounts and API keys from the following services:
 | `JUPITER_API_KEY` | [portal.jup.ag](https://portal.jup.ag) | Real-time SOL price quotes from Jupiter Quote API v1 |
 | `SOLANA_KEYPAIR_JSON` | Optional — auto-generated if not set | Solana wallet for on-chain memo transactions (devnet) |
 
-Set these as environment variables before running:
+Set these as environment variables and set `USE_MOCKS=false` in your `.env` file:
 
 ```bash
-
-
 export OPENAI_API_KEY="your-openai-key from https://platform.openai.com"
 export JUPITER_API_KEY="your-jupiter-key from https://portal.jup.ag"
 ```

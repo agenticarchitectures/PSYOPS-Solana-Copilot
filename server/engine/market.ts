@@ -13,6 +13,12 @@ export interface MarketData {
 }
 
 export async function getImpliedPrice(pair: string, notional: number): Promise<MarketData> {
+  // Use mock implementation if USE_MOCKS is enabled
+  if (process.env.USE_MOCKS === "true") {
+    const { getImpliedPriceMock } = await import("./market.mock");
+    return getImpliedPriceMock(pair, notional);
+  }
+
   const [base, quote] = pair.split("-");
   const inputMint = MINT_MAP[quote] || MINT_MAP["USDC"];
   const outputMint = MINT_MAP[base] || MINT_MAP["SOL"];

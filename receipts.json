@@ -1,1 +1,23 @@
-[]
+[
+  {
+    "id": "73c06b65",
+    "ts": 1771091940684,
+    "pair": "SOL-USDC",
+    "side": "BUY",
+    "mode": "paper",
+    "notional": 20,
+    "fillPrice": 87.97192157952425,
+    "confidence": 0.5,
+    "reasons": [
+      "Manual execution from dashboard"
+    ],
+    "riskChecks": {
+      "cooldownOK": true,
+      "maxNotionalOK": true,
+      "maxDailyLossOK": true,
+      "slippageOK": true
+    },
+    "memoTxid": "N/A",
+    "status": "SUCCESS"
+  }
+]

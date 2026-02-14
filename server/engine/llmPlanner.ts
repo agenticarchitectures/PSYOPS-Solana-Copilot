@@ -44,6 +44,12 @@ You MUST respond with valid JSON in this exact format:
 {"action": "HOLD", "confidence": 0.5, "reasons": ["reason 1", "reason 2"]}`;
 
 export async function decideAction(context: LLMContext): Promise<LLMDecision> {
+  // Use mock implementation if USE_MOCKS is enabled
+  if (process.env.USE_MOCKS === "true") {
+    const { decideActionMock } = await import("./llmPlanner.mock");
+    return decideActionMock(context);
+  }
+
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
